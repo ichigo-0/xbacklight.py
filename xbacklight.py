@@ -14,6 +14,10 @@ import re, sys, time
 
 class Backlight:
   def __init__(self, con=None, ext=None):
+    """
+        con: Optional existing xcb connection or display string.
+        ext: RandR extension object associated with con.
+    """
     if con is None or isinstance(con, str):
       self.con = con = xcffib.connect(display=con)
     if ext is None:
@@ -29,6 +33,14 @@ class Backlight:
         False, len(a), a.encode('latin-1')).reply().atom
 
   def get(self, outputs=None):
+    """
+        outputs: list of (scr_root, output_id) pairs, where None for either
+            value will match anything.
+
+        return: dict of {(scr_root, output_id): (bmin, cur, bmax)}, where
+            the value tuples are the minimum, current, and maximum brightness
+            values.
+    """
     ret = {}
     setup = getattr(self.con, 'setup', None)
     if setup is None:
@@ -69,6 +81,17 @@ class Backlight:
     return ret
 
   def set(self, val, rel=False, percent=True, outputs=None, fps=30, dur=.2):
+    """
+        val: New brightness value.
+        rel: Whether val is relative to (should be added to) current value.
+        percent: Whether val is a percentage or native units.
+        outputs: a dict of the form returned by Backlight.get().
+        fps: Number of steps per second.
+        dur: Number of seconds to complete the change.
+
+        return: dict of form {(scr_root, output_id): new}, where new is
+            resulting brightness level in native units.
+    """
     if not hasattr(outputs, 'keys'):
       outputs = self.get(outputs)
     startt = time.time()
@@ -171,7 +194,7 @@ def millisecs(s):
 
 def parseargs():
   import argparse
-  p = argparse.ArgumentParser(description="Uses the X11 RANDR extension to "
+  p = argparse.ArgumentParser(description="Uses the X11 RandR extension to "
       "get or set brightness level of displays.")
   p.add_argument('-d', '-display', '--display',
       help="Connect to specified display")
